@@ -287,11 +287,11 @@ response &lt;-<span class="st"> </span><span class="kw">GET</span>(<span class="
 <span class="co">#&gt;  $ id       : chr &quot;254319736002&quot;</span>
 <span class="co">#&gt;  $ name     : chr &quot;UTS: University of Technology Sydney&quot;</span>
 <span class="co">#&gt;  $ category : chr &quot;College &amp; University&quot;</span>
-<span class="co">#&gt;  $ fan_count: int 91782</span>
+<span class="co">#&gt;  $ fan_count: int 91786</span>
 <span class="co">#&gt;  $ link     : chr &quot;https://www.facebook.com/UTSEngage/&quot;</span></code></pre></div>
 <p>Alternatively, if you need to access the actual <strong>json</strong> use:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">content</span>(response, <span class="dt">as =</span> <span class="st">'text'</span>)
-<span class="co">#&gt; [1] &quot;{\&quot;username\&quot;:\&quot;UTSEngage\&quot;,\&quot;id\&quot;:\&quot;254319736002\&quot;,\&quot;name\&quot;:\&quot;UTS: University of Technology Sydney\&quot;,\&quot;category\&quot;:\&quot;College &amp; University\&quot;,\&quot;fan_count\&quot;:91782,\&quot;link\&quot;:\&quot;https:\\/\\/www.facebook.com\\/UTSEngage\\/\&quot;}&quot;</span></code></pre></div>
+<span class="co">#&gt; [1] &quot;{\&quot;username\&quot;:\&quot;UTSEngage\&quot;,\&quot;id\&quot;:\&quot;254319736002\&quot;,\&quot;name\&quot;:\&quot;UTS: University of Technology Sydney\&quot;,\&quot;category\&quot;:\&quot;College &amp; University\&quot;,\&quot;fan_count\&quot;:91786,\&quot;link\&quot;:\&quot;https:\\/\\/www.facebook.com\\/UTSEngage\\/\&quot;}&quot;</span></code></pre></div>
 </div>
 </div>
 <div id="firth-step-parsing-the-json-response-to-a-data.frame" class="section level2">
@@ -299,7 +299,7 @@ response &lt;-<span class="st"> </span><span class="kw">GET</span>(<span class="
 <p>Posts:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Define the node, edge and fields</span>
 path &lt;-<span class="st"> '/UTSEngage/feed'</span>
-query_args &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">fields =</span> <span class="st">'id,created_time,from,message,type,place,permalink_url,is_hidden,shares'</span>,
+query_args &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">fields =</span> <span class="st">'id,created_time,from,message,type,place,permalink_url,is_hidden,shares,likes.summary(true),comments.summary(true)'</span>,
                    <span class="dt">access_token =</span> app_access_token)
 
 <span class="co"># GET request</span>
@@ -307,84 +307,61 @@ response &lt;-<span class="st"> </span><span class="kw">GET</span>(<span class="
                 <span class="dt">path =</span> path,
                 <span class="dt">query =</span> query_args)
 
-<span class="co"># Feed</span>
-<span class="kw">str</span>(<span class="kw">content</span>(response)$data)</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(purrr)
-<span class="co">#&gt; </span>
-<span class="co">#&gt; Attaching package: 'purrr'</span>
-<span class="co">#&gt; The following objects are masked from 'package:dplyr':</span>
-<span class="co">#&gt; </span>
-<span class="co">#&gt;     contains, order_by</span>
-response_ls &lt;-<span class="st"> </span>jsonlite::<span class="kw">fromJSON</span>(<span class="kw">content</span>(response, <span class="st">&quot;text&quot;</span>), <span class="dt">simplifyVector =</span> <span class="ot">FALSE</span>)</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">page_name &lt;-<span class="st"> &quot;commonwealthbank&quot;</span>
-<span class="co">#page_name &lt;- &quot;westpac&quot;</span>
-<span class="co">#page_name &lt;- &quot;anzaustralia&quot;</span>
-<span class="co">#page_name &lt;- &quot;nab&quot;</span>
-page_posts &lt;-<span class="st"> </span>tibble::<span class="kw">as_tibble</span>(<span class="kw">getPage</span>(page_name, fb_token, <span class="dt">n =</span> <span class="dv">100</span>, <span class="dt">feed =</span> <span class="ot">FALSE</span>, <span class="dt">verbose =</span> <span class="ot">FALSE</span>))
-page_posts$visitor_post &lt;-<span class="st"> </span><span class="ot">FALSE</span>
-visitor_posts &lt;-<span class="st"> </span>tibble::<span class="kw">as_tibble</span>(<span class="kw">getPage</span>(page_name, fb_token, <span class="dt">n =</span> <span class="dv">1000</span>, <span class="dt">feed =</span> <span class="ot">TRUE</span>, <span class="dt">verbose =</span> <span class="ot">FALSE</span>))
-visitor_posts$visitor_post &lt;-<span class="st"> </span><span class="ot">TRUE</span>
+<span class="co"># Convert json to a list</span>
+response_ls &lt;-<span class="st"> </span>jsonlite::<span class="kw">fromJSON</span>(<span class="kw">content</span>(response, <span class="st">&quot;text&quot;</span>))</code></pre></div>
+<p>Explain data and paging. Demonstrate how you’d age the next page;</p>
+<p>To get the next page</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">response_next &lt;-<span class="st"> </span><span class="kw">GET</span>(response_ls$paging$<span class="st">`</span><span class="dt">next</span><span class="st">`</span>)</code></pre></div>
+<p>You would continue this until paging$<code>next</code> is null using a while loop.</p>
+<p>Convert the results to a tibble</p>
+<p>Just manually do</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">posts &lt;-<span class="st"> </span><span class="kw">tibble</span>(<span class="dt">id =</span> response_ls$data$id,
+                <span class="dt">created_time =</span> lubridate::<span class="kw">with_tz</span>(
+                  lubridate::<span class="kw">ymd_hms</span>(response_ls$data$created_time,
+                                     <span class="dt">tz =</span> <span class="st">'UTC'</span>),
+                  <span class="dt">tz =</span> <span class="st">'Australia/Sydney'</span>),
+                <span class="dt">from_id =</span> response_ls$data$from$id,
+                <span class="dt">from_name =</span> response_ls$data$from$name,
+                <span class="dt">message =</span> response_ls$data$message,
+                <span class="dt">type =</span> response_ls$data$type,
+                <span class="dt">permalink_url =</span> response_ls$data$permalink_url,
+                <span class="dt">is_hidden =</span> response_ls$data$is_hidden,
+                <span class="dt">shares_count =</span> response_ls$data$shares$count,
+                <span class="dt">likes_count =</span> response_ls$data$likes$summary$total_count,
+                <span class="dt">comments_count =</span> response_ls$data$comments$summary$total_count)
 
-<span class="co"># Bind</span>
-posts &lt;-<span class="st"> </span><span class="kw">bind_rows</span>(page_posts, visitor_posts) %&gt;%<span class="st"> </span><span class="kw">arrange</span>(created_time)
-
-Rfacebook::<span class="kw">getPage</span>()</code></pre></div>
-<p>Quick clean up:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Convert time</span>
-posts$created_time &lt;-<span class="st"> </span>lubridate::<span class="kw">with_tz</span>(lubridate::<span class="kw">ymd_hms</span>(posts$created_time, <span class="dt">tz =</span> <span class="st">'UTC'</span>), <span class="dt">tz =</span> <span class="st">'Australia/Sydney'</span>)
-<span class="co"># Build the URLs for these posts</span>
-posts$url &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">'https://www.facebook.com/'</span>, page_name, <span class="st">'/posts/'</span>, stringr::<span class="kw">str_split</span>(posts$id,<span class="st">'_'</span>, <span class="dt">simplify =</span> <span class="ot">TRUE</span>)[,<span class="dv">2</span>])</code></pre></div>
-<p>Inspect</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">glimpse</span>(posts)
-<span class="kw">summary</span>(posts)
-posts</code></pre></div>
+<span class="co"># Inspect</span>
+<span class="kw">glimpse</span>(posts)
+<span class="co">#&gt; Observations: 25</span>
+<span class="co">#&gt; Variables: 11</span>
+<span class="co">#&gt; $ id             &lt;chr&gt; &quot;254319736002_10154343848336003&quot;, &quot;254319736002...</span>
+<span class="co">#&gt; $ created_time   &lt;dttm&gt; 2017-04-02 11:52:08, 2017-04-01 23:27:55, 2017...</span>
+<span class="co">#&gt; $ from_id        &lt;chr&gt; &quot;254319736002&quot;, &quot;1332239406836536&quot;, &quot;2543197360...</span>
+<span class="co">#&gt; $ from_name      &lt;chr&gt; &quot;UTS: University of Technology Sydney&quot;, &quot;Ravi P...</span>
+<span class="co">#&gt; $ message        &lt;chr&gt; &quot;Uni is all sorts of confusing, so Vertigo pull...</span>
+<span class="co">#&gt; $ type           &lt;chr&gt; &quot;link&quot;, &quot;link&quot;, &quot;link&quot;, &quot;video&quot;, &quot;link&quot;, &quot;statu...</span>
+<span class="co">#&gt; $ permalink_url  &lt;chr&gt; &quot;https://www.facebook.com/UTSEngage/posts/10154...</span>
+<span class="co">#&gt; $ is_hidden      &lt;lgl&gt; FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE...</span>
+<span class="co">#&gt; $ shares_count   &lt;int&gt; 3, NA, 65, 2, 2, NA, NA, NA, NA, NA, 5, 8, 4, 7...</span>
+<span class="co">#&gt; $ likes_count    &lt;int&gt; 60, 1, 444, 23, 42, 0, 22, 0, 37, 0, 63, 143, 1...</span>
+<span class="co">#&gt; $ comments_count &lt;int&gt; 10, 0, 546, 0, 0, 0, 1, 0, 1, 0, 23, 4, 2, 8, 2...</span></code></pre></div>
 <p>Who is posting?</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">posts %&gt;%<span class="st"> </span><span class="kw">count</span>(from_name, <span class="dt">sort =</span> <span class="ot">TRUE</span>)</code></pre></div>
-<p>Filter messages:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">posts %&gt;%<span class="st"> </span>
-<span class="st">  </span><span class="kw">filter</span>(stringr::<span class="kw">str_detect</span>(posts$message, <span class="st">'apple'</span>)) %&gt;%<span class="st"> </span>
-<span class="st">  </span><span class="kw">select</span>(message, id, url)
-  </code></pre></div>
-</div>
-<div id="pull-comments-on-posts-advanced" class="section level2">
-<h2>Pull comments on posts (Advanced)</h2>
-<p>(not including comment likes)</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Function to get and process comments</span>
-get_post_comments &lt;-<span class="st"> </span>function(post_id) {
-  <span class="co"># Pull the post details (without likes)</span>
-  post &lt;-<span class="st"> </span><span class="kw">getPost</span>(post_id, fb_token, <span class="dt">comments =</span> <span class="ot">TRUE</span>, <span class="dt">likes =</span> <span class="ot">FALSE</span>)
-  <span class="co"># Return fields of interest</span>
-  if (<span class="kw">nrow</span>(post$comments) &gt;<span class="st"> </span><span class="dv">0</span>) {
-    <span class="kw">return</span>(<span class="kw">tibble</span>(<span class="dt">post_id =</span> post$post$id,
-                  <span class="dt">comment_id =</span> post$comments$id,
-                  <span class="dt">comment_from_name =</span> post$comments$from_name,
-                  <span class="dt">comment_message =</span> post$comments$message,
-                  <span class="dt">comment_likes_count =</span> post$comments$likes_count))
-  }
-  <span class="kw">warning</span>(<span class="kw">paste</span>(<span class="st">'Note: No comments exit for post_id:'</span>, post_id, <span class="st">'</span><span class="ch">\n</span><span class="st">'</span>), <span class="dt">call. =</span> <span class="ot">FALSE</span>)
-  <span class="kw">return</span>(<span class="ot">NULL</span>)
-}
-
-<span class="co"># Make function safe to handle deleted posts</span>
-get_post_comments &lt;-<span class="st"> </span>purrr::<span class="kw">safely</span>(get_post_comments)
-
-<span class="co"># == Get comments</span>
-<span class="co"># Just for visitor posts</span>
-<span class="co">#safe_res &lt;- purrr::transpose(purrr::map(visitor_posts$id, ~ get_post_comments(.)))[['result']]</span>
-<span class="co"># All posts</span>
-safe_res &lt;-<span class="st"> </span>purrr::<span class="kw">transpose</span>(purrr::<span class="kw">map</span>(posts$id, ~<span class="st"> </span><span class="kw">get_post_comments</span>(.)))[[<span class="st">'result'</span>]]
-
-<span class="co"># Get elements that didn't error</span>
-is_ok &lt;-<span class="st"> </span>purrr::<span class="kw">map_lgl</span>(safe_res, ~<span class="st"> </span>!<span class="kw">is.null</span>(.))
-<span class="co"># Collapse</span>
-comments &lt;-<span class="st"> </span>purrr::<span class="kw">reduce</span>(safe_res[is_ok], bind_rows)</code></pre></div>
-<p>Inspect</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">glimpse</span>(comments)
-<span class="kw">summary</span>(comments)
-comments</code></pre></div>
-<p>Highest liked comment:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">comments %&gt;%
-<span class="st">  </span><span class="kw">filter</span>(comment_likes_count ==<span class="st"> </span><span class="kw">max</span>(comment_likes_count))</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Top 5 posters</span>
+posts %&gt;%
+<span class="st">  </span><span class="kw">count</span>(from_name, <span class="dt">sort =</span> <span class="ot">TRUE</span>) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">top_n</span>(<span class="dv">5</span>)</code></pre></div>
+<p>Highest liked post:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">posts %&gt;%
+<span class="st">  </span><span class="kw">filter</span>(likes_count ==<span class="st"> </span><span class="kw">max</span>(likes_count)) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">select</span>(from_name, message, likes_count, comments_count, permalink_url) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">glimpse</span>()
+<span class="co">#&gt; Observations: 1</span>
+<span class="co">#&gt; Variables: 5</span>
+<span class="co">#&gt; $ from_name      &lt;chr&gt; &quot;UTS: University of Technology Sydney&quot;</span>
+<span class="co">#&gt; $ message        &lt;chr&gt; &quot;Great news for all our single students - UTS i...</span>
+<span class="co">#&gt; $ likes_count    &lt;int&gt; 444</span>
+<span class="co">#&gt; $ comments_count &lt;int&gt; 546</span>
+<span class="co">#&gt; $ permalink_url  &lt;chr&gt; &quot;https://www.facebook.com/UTSEngage/posts/10154...</span></code></pre></div>
 </div>
 
 
